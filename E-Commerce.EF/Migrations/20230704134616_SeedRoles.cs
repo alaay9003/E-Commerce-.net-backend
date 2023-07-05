@@ -2,10 +2,10 @@
 
 #nullable disable
 
-namespace Ecommerce.Migrations
+namespace E_Commerce.EF.Migrations
 {
     /// <inheritdoc />
-    public partial class seedrools : Migration
+    public partial class SeedRoles : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -13,19 +13,19 @@ namespace Ecommerce.Migrations
             migrationBuilder.InsertData(
                 table: "AspNetRoles",
                 columns: new[] { "Id", "Name", "NormalizedName", "ConcurrencyStamp" },
-                values: new object[] {Guid.NewGuid().ToString(),"User" ,"User".ToUpper(),Guid.NewGuid().ToString()}
-                       );
+                values: new object[] { Guid.NewGuid().ToString(), "User", "User".ToUpper(), Guid.NewGuid().ToString() }
+                );
             migrationBuilder.InsertData(
                 table: "AspNetRoles",
                 columns: new[] { "Id", "Name", "NormalizedName", "ConcurrencyStamp" },
                 values: new object[] { Guid.NewGuid().ToString(), "Admin", "Admin".ToUpper(), Guid.NewGuid().ToString() }
-           );
+                );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("DELET FROM [AspNetRoles]");
+            migrationBuilder.Sql("DELETE FROM [AspNetRoles]");
         }
     }
 }

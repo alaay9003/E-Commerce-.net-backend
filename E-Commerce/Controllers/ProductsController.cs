@@ -12,29 +12,26 @@ namespace E_Commerce.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
+        private readonly IUnitOfWork _unitOfWork;
         private new List<string> _allowesExtenstions = new List<string> { ".jpg", ".png" };
         private long _maxAllowedPosterSize = 2097152;
-
-        private readonly IBaseRepository<Product> _productRepository;
-        private readonly IBaseRepository<Category> _CategoryRepository;
-        private readonly IBaseRepository<Brand> _brandRepository;
-        public ProductsController(IBaseRepository<Product> productRepository , 
-            IBaseRepository<Category> CategoryRepository, IBaseRepository<Brand> brandRepository)
+        public ProductsController(IUnitOfWork unitOfWork)
         {
-            _productRepository = productRepository;
-            _CategoryRepository = CategoryRepository;
-            _brandRepository = brandRepository;
+            _unitOfWork = unitOfWork;
         }
         [HttpGet]
-        public async Task<IActionResult> GetAllAsync()
+        public async Task<IActionResult> GetAllAsync([FromQuery] int? pageresult=null , [FromQuery] int? pageNumber = null)
         {
-            var product = await _productRepository.GetAllByQuery(new[] { "Brand", "Category" }, p => p.UpdateDate);
+            var prodNumber = await _unitOfWork.Product.count();
+            var pageCount = Math.Ceiling((decimal)prodNumber / (decimal)pageresult);
+            var product = await _unitOfWork.Product.GetAllByQuery((pageNumber-1)*(int)pageresult
+                ,(int)pageresult,new[] { "Brand", "Category" }, p => p.Id);
             return Ok(product);
         }
         [HttpGet("id")]
         public async Task<IActionResult> GetByIdAsync(int id)
         {
-            var product = await _productRepository.FindAllByQuery(p=>p.Id==id , new[] { "Category", "Brand" });
+            var product = await _unitOfWork.Product.FindAllByQuery(p => p.Id == id, new[] { "Category", "Brand" });
             if (product.Count() == 0)
                 return NotFound();
             return Ok(product);
@@ -42,7 +39,7 @@ namespace E_Commerce.Controllers
         [HttpGet("GetByCategoryId")]
         public async Task<IActionResult> GetByCategoryId(int CategoryId)
         {
-            var product = await _productRepository.FindAllByQuery(p => p.CategoryId == CategoryId, new[] { "Category", "Brand" });
+            var product = await _unitOfWork.Product.FindAllByQuery(p => p.CategoryId == CategoryId, new[] { "Category", "Brand" });
             if (product.Count() == 0)
                 return NotFound();
             return Ok(product);
@@ -50,8 +47,8 @@ namespace E_Commerce.Controllers
         [HttpGet("GetByBrandId")]
         public async Task<IActionResult> GetByBrandId(int BrandId)
         {
-            var product = await _productRepository.FindAllByQuery(p => p.BrandId == BrandId, new[] { "Category", "Brand" });
-            if (product.Count()==0)
+            var product = await _unitOfWork.Product.FindAllByQuery(p => p.BrandId == BrandId, new[] { "Category", "Brand" });
+            if (product.Count() == 0)
                 return NotFound();
             return Ok(product);
         }
@@ -68,10 +65,10 @@ namespace E_Commerce.Controllers
             if (dto.Poster.Length > _maxAllowedPosterSize)
                 return BadRequest("Max Allowed images size 2mb");
 
-            var isVaildCaategory = await _CategoryRepository.FindById(dto.CategoryId);
-            if (isVaildCaategory ==null)
+            var isVaildCaategory = await _unitOfWork.Category.FindById(dto.CategoryId);
+            if (isVaildCaategory == null)
                 return BadRequest("Wrong Category Id");
-            var isVaildBrand = await _brandRepository.FindById(dto.BrandId);
+            var isVaildBrand = await _unitOfWork.Brand.FindById(dto.BrandId);
             if (isVaildBrand == null)
                 return BadRequest("Wrong brand Id");
 
@@ -89,17 +86,17 @@ namespace E_Commerce.Controllers
                 UpdateDate = DateTime.Now,
                 BrandId = dto.BrandId,
             };
-            await _productRepository.Add(product);
+            await _unitOfWork.Product.Add(product);
             return Ok(product);
 
         }
         [HttpDelete("id")]
         public async Task<IActionResult> Delete(int id)
         {
-            var product = await _productRepository.FindById(id);
+            var product = await _unitOfWork.Product.FindById(id);
             if (product == null)
                 return BadRequest("No product id was found");
-            await _productRepository.Delet(product);
+            await _unitOfWork.Product.Delet(product);
             return Ok(product);
         }
 
@@ -107,7 +104,7 @@ namespace E_Commerce.Controllers
         public async Task<IActionResult> UpdateAsync(int id, [FromForm] ProductDto dto)
         {
 
-            var product = await _productRepository.FindById(id);
+            var product = await _unitOfWork.Product.FindById(id);
             if (product == null)
             {
                 return NotFound($"no product was found with id ={id}");
@@ -125,10 +122,10 @@ namespace E_Commerce.Controllers
                 product.Poster = dataStream.ToArray();
             }
 
-            var isVaildCaategory = await _CategoryRepository.FindById(dto.CategoryId);
-            if (isVaildCaategory==null)
+            var isVaildCaategory = await _unitOfWork.Category.FindById(dto.CategoryId);
+            if (isVaildCaategory == null)
                 return BadRequest("Wrong Category Id");
-            var brand = await _brandRepository.FindById(dto.BrandId);
+            var brand = await _unitOfWork.Brand.FindById(dto.BrandId);
             if (brand == null)
                 return BadRequest("Wrong brand Id");
             product.Price = dto.Price;
@@ -140,9 +137,19 @@ namespace E_Commerce.Controllers
             product.UpdateDate = DateTime.Now;
             product.BrandId = dto.BrandId;
 
-            _productRepository.Update(product);
+            _unitOfWork.Product.Update(product);
             return Ok(product);
         }
+        [HttpGet("search")]
+        public async Task<IActionResult> search(string productName)
+        {
+            if(productName == null) return BadRequest("no search query");
+            var products = await _unitOfWork.Product.FindAllByQuery(p=>p.Name.Contains(productName) || p.Description.Contains(productName)
+            , new[] { "Category", "Brand" } , p=>p.Name);
+            if (products.Count() == 0) return NotFound();
+            return Ok(products);
+        }
+
 
     }
 }

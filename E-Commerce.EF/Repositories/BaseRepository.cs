@@ -31,9 +31,22 @@ namespace E_Commerce.EF.Repositories
             _context.Set<T>().Remove(item);
             _context.SaveChanges();
  
+        }   
+        public async Task DeleteAll(IEnumerable<T> items)
+        {
+            _context.Set<T>().RemoveRange(items);
+            _context.SaveChanges();
+ 
         }
 
         public async Task<T> FindById(int id)
+        {
+            return await _context.Set<T>().FindAsync(id);
+        }
+        public async Task<T> FindById(string id)
+        {
+            return await _context.Set<T>().FindAsync(id);
+        }  public async Task<T> FindById(Guid id)
         {
             return await _context.Set<T>().FindAsync(id);
         }
@@ -57,16 +70,29 @@ namespace E_Commerce.EF.Repositories
                     query = query.Include(include);
                 }
             return await query.Where(match).ToListAsync();
+        } 
+        public async Task<IEnumerable<T>> FindAllByQuery(Expression<Func<T, bool>> match)
+        {
+            IQueryable<T> query = _context.Set<T>();
+          
+            return await query.Where(match).ToListAsync();
         }
 
         public async Task<IEnumerable<T>> FindAllByQuery(Expression<Func<T, bool>> match, string[] includes = null, Expression<Func<T, object>> orderBy = null, string orderByDirection = "Ascending")
         {
             IQueryable<T> query = _context.Set<T>();
-            if(includes != null)
+            if (includes != null)
                 foreach(var include in includes)
                 {
                     query = query.Include(include);
                 }
+            if (orderBy != null)
+            {
+                if (orderByDirection == "Ascending")
+                    query = query.OrderBy(orderBy);
+                else
+                    query = query.OrderByDescending(orderBy);
+            };
             return await query.Where(match).ToListAsync();
         }
 
@@ -81,9 +107,14 @@ namespace E_Commerce.EF.Repositories
             return await query.FirstOrDefaultAsync(match);
         }
 
-        public async Task<IEnumerable<T>> GetAllByQuery(string[] includes = null, Expression<Func<T, object>> orderBy = null, string orderByDirection = "Ascending")
+        public async Task<IEnumerable<T>> GetAllByQuery(int? skip, int? take,string[] includes = null, Expression<Func<T, object>> orderBy = null, string orderByDirection = "Ascending")
         {
             IQueryable<T> query = _context.Set<T>();
+            if (skip.HasValue)
+                query = query.Skip(skip.Value);
+
+            if (take.HasValue)
+                query = query.Take(take.Value);
             if (includes != null)
                 foreach (var include in includes)
                 {
@@ -109,6 +140,12 @@ namespace E_Commerce.EF.Repositories
                     query=query.Include(include);
                 }
             return await query.ToListAsync();
+        }
+
+
+        public async Task<int> count()
+        {
+           return await _context.Set<T>().CountAsync();
         }
     }
 }
