@@ -1,6 +1,7 @@
 ﻿using E_Commerce.Core.Dtos;
 using E_Commerce.Core.Interfaces;
 using E_Commerce.Core.Models;
+using E_Commerce.EF;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,13 +27,13 @@ namespace E_Commerce.Controllers
             var category = new Category
             {
                 Name = dto.Name,
-                UpdateDate = DateTime.Now
+                UpdateDate = DateTime.Now.ToString("MM/dd/yyyy hh:mm tt")
             };
             await _unitOfWork.Category.Add(category);
             return Ok(category);
 
         }
-        [HttpDelete("{id}")]
+        [HttpDelete]
         public async Task<IActionResult> DeletCategory(int id)
         {
             if (!ModelState.IsValid)
@@ -45,7 +46,7 @@ namespace E_Commerce.Controllers
             await _unitOfWork.Category.Delet(item);
             return Ok(item);
         }
-        [HttpGet("{id}")]
+        [HttpGet("id")]
         public async Task<IActionResult> GetById(int id)
         {
             if (!ModelState.IsValid)
@@ -57,11 +58,12 @@ namespace E_Commerce.Controllers
                 return NotFound();
             return Ok(item);
         }
-        [HttpGet("GetAll")]
+        [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             return Ok(await _unitOfWork.Category.GetAll());
         }
+       
         [HttpPut]
         public async Task<IActionResult> Update(int id, [FromBody] CategoryDto category)
         {
@@ -75,7 +77,7 @@ namespace E_Commerce.Controllers
                 return NotFound();
             }
             item.Name = category.Name;
-            item.UpdateDate = DateTime.Now;
+            item.UpdateDate = DateTime.Now.ToString("MM/dd/yyyy hh:mm tt");
             _unitOfWork.Category.Update(item);
             return Ok(item);
 

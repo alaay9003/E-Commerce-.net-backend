@@ -13,6 +13,7 @@ namespace E_Commerce.EF
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
+           
         }
 
         public DbSet<Category> categories { get; set; }
@@ -21,6 +22,7 @@ namespace E_Commerce.EF
         public DbSet<Cart> carts { get; set; }
         public DbSet<CartItem> cartItems { get; set; }
         public DbSet<Order> orders { get; set; }
+        public DbSet<OrderItem> orderItem { get; set; }
 
     }
 }
